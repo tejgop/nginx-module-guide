@@ -120,7 +120,11 @@
 about structs, pointers, and functions. You also need to know how the
 nginx.conf file works.</p>
 
-<p>If you find a mistake in the guide, please report it in an <a href="#">issue</a>!</p>
+<p>If you find a mistake in the guide, please report it in an <a href="https://github.com/tejgop/nginx-module-guide/issues">issue</a>!</p>
+
+<aside class="warning">
+This guide is currently being written. Use it at your own risk!
+</aside>
 
 <h1 id="the-handler-guide">The Handler Guide</h1>
 
@@ -260,8 +264,7 @@ still have to define it and fill it with <code class="prettyprint">NULL</code>s.
 <p><code class="prettyprint">ngx_http_hello_world_module</code> is an array of definitions for the
 module. It tells where the array of directives and functions are
 (<code class="prettyprint">ngx_http_hello_world_module</code> and <code class="prettyprint">ngx_http_hello_world_module_ctx</code>).
-We can also add init and exit callback functions. If you&rsquo;re interested,
-you can learn more <a href="#">here</a>. In our module, we don&rsquo;t need them so
+We can also add init and exit callback functions. In our module, we don&rsquo;t need them so
 we put <code class="prettyprint">NULL</code>s instead.</p>
 
 <p>Now for the interesting part. <code class="prettyprint">ngx_http_hello_world_handler</code> is the heart
