@@ -1,0 +1,789 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Tejas's Nginx Module Guide</title>
+
+    <style>
+      .highlight table td { padding: 5px; }
+.highlight table pre { margin: 0; }
+.highlight, .highlight .w {
+  color: #f8f8f2;
+  background-color: #272822;
+}
+.highlight .err {
+  color: #151515;
+  background-color: #ac4142;
+}
+.highlight .c, .highlight .cd, .highlight .cm, .highlight .c1, .highlight .cs {
+  color: #505050;
+}
+.highlight .cp {
+  color: #f4bf75;
+}
+.highlight .nt {
+  color: #f4bf75;
+}
+.highlight .o, .highlight .ow {
+  color: #d0d0d0;
+}
+.highlight .p, .highlight .pi {
+  color: #d0d0d0;
+}
+.highlight .gi {
+  color: #90a959;
+}
+.highlight .gd {
+  color: #ac4142;
+}
+.highlight .gh {
+  color: #6a9fb5;
+  background-color: #151515;
+  font-weight: bold;
+}
+.highlight .k, .highlight .kn, .highlight .kp, .highlight .kr, .highlight .kv {
+  color: #aa759f;
+}
+.highlight .kc {
+  color: #d28445;
+}
+.highlight .kt {
+  color: #d28445;
+}
+.highlight .kd {
+  color: #d28445;
+}
+.highlight .s, .highlight .sb, .highlight .sc, .highlight .sd, .highlight .s2, .highlight .sh, .highlight .sx, .highlight .s1 {
+  color: #90a959;
+}
+.highlight .sr {
+  color: #75b5aa;
+}
+.highlight .si {
+  color: #8f5536;
+}
+.highlight .se {
+  color: #8f5536;
+}
+.highlight .nn {
+  color: #f4bf75;
+}
+.highlight .nc {
+  color: #f4bf75;
+}
+.highlight .no {
+  color: #f4bf75;
+}
+.highlight .na {
+  color: #6a9fb5;
+}
+.highlight .m, .highlight .mf, .highlight .mh, .highlight .mi, .highlight .il, .highlight .mo, .highlight .mb, .highlight .mx {
+  color: #90a959;
+}
+.highlight .ss {
+  color: #90a959;
+}
+    </style>
+    <link href="stylesheets/screen.css" rel="stylesheet" media="screen" />
+    <link href="stylesheets/print.css" rel="stylesheet" media="print" />
+      <script src="javascripts/all.js"></script>
+  </head>
+
+  <body class="index" data-languages="[]">
+    <a href="#" id="nav-button">
+      <span>
+        NAV
+        <img src="images/navbar.png" />
+      </span>
+    </a>
+    <div class="tocify-wrapper">
+      <img src="images/logo.png" />
+        <div class="lang-selector">
+        </div>
+        <div class="search">
+          <input type="text" class="search" id="input-search" placeholder="Search">
+        </div>
+        <ul class="search-results"></ul>
+      <div id="toc">
+      </div>
+    </div>
+    <div class="page-wrapper">
+      <div class="dark-box"></div>
+      <div class="content">
+        <h1 id="introduction">Introduction</h1>
+
+<p>Welcome to my Nginx module guide!</p>
+
+<p>To follow this guide, you need to know a decent amount of C. You should know
+about structs, pointers, and functions. You also need to know how the
+nginx.conf file works.</p>
+
+<p>If you find a mistake in the guide, please report it in an <a href="#">issue</a>!</p>
+
+<h1 id="the-handler-guide">The Handler Guide</h1>
+
+<p>Let&rsquo;s get started with a quick hello world module called
+<code class="prettyprint">ngx_http_hello_world_module</code>.</p>
+
+<p>This module will be a handler, meaning that it will take a request and
+generate output.</p>
+
+<p>In the nginx source, create a folder called <code class="prettyprint">ngx_http_hello_world_module</code>,
+and make two files in it: <code class="prettyprint">config</code> and <code class="prettyprint">ngx_http_hello_world_module.c</code>.</p>
+
+<h2 id="the-config-file">The Config File</h2>
+
+<blockquote>
+<p>config</p>
+</blockquote>
+<pre class="highlight shell"><code><span class="nv">ngx_addon_name</span><span class="o">=</span>ngx_http_hello_world_module
+
+<span class="k">if </span><span class="nb">test</span> -n <span class="s2">"</span><span class="nv">$ngx_module_link</span><span class="s2">"</span>; <span class="k">then</span>
+    <span class="c"># The New Way</span>
+    <span class="nv">ngx_module_type</span><span class="o">=</span>HTTP
+    <span class="nv">ngx_module_name</span><span class="o">=</span>ngx_http_hello_world_module
+    <span class="nv">ngx_module_srcs</span><span class="o">=</span><span class="s2">"</span><span class="nv">$ngx_addon_dir</span><span class="s2">/ngx_http_hello_world_module.c"</span>
+
+    . auto/module
+<span class="k">else</span>
+    <span class="c"># The Old Way</span>
+    <span class="nv">HTTP_MODULES</span><span class="o">=</span><span class="s2">"</span><span class="nv">$HTTP_MODULES</span><span class="s2"> ngx_http_hello_world_module"</span>
+    <span class="nv">NGX_ADDON_SRCS</span><span class="o">=</span><span class="s2">"</span><span class="nv">$NGX_ADDON_SRCS</span><span class="s2"> </span><span class="nv">$ngx_addon_dir</span><span class="s2">/ngx_http_hello_world_module.c"</span>
+<span class="k">fi</span>
+</code></pre>
+
+<p>The config file is just a simple shell script that will be used at compile
+time to show Nginx where your module source is. As you can see, the config
+file tests to see if your nginx version supports dynamic modules
+(the <code class="prettyprint">test -n</code> line). If it supports dynamic modules, the module is added
+the new way. Otherwise, it is added the old way.</p>
+
+<h2 id="the-c-file">The C File</h2>
+
+<blockquote>
+<p>ngx_http_hello_world_module.c</p>
+</blockquote>
+<pre class="highlight c"><code>
+<span class="cp">#include &lt;ngx_config.h&gt;
+#include &lt;ngx_core.h&gt;
+#include &lt;ngx_http.h&gt;
+</span>
+<span class="k">static</span> <span class="kt">char</span> <span class="o">*</span><span class="n">ngx_http_hello_world</span><span class="p">(</span><span class="n">ngx_conf_t</span> <span class="o">*</span><span class="n">cf</span><span class="p">,</span> <span class="n">ngx_command_t</span> <span class="o">*</span><span class="n">cmd</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">conf</span><span class="p">);</span>
+
+<span class="k">static</span> <span class="n">ngx_command_t</span>  <span class="n">ngx_http_hello_world_commands</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="p">{</span>
+    <span class="n">ngx_string</span><span class="p">(</span><span class="s">"print_hello_world"</span><span class="p">),</span>
+    <span class="n">NGX_HTTP_LOC_CONF</span><span class="o">|</span><span class="n">NGX_CONF_NOARGS</span><span class="p">,</span>
+    <span class="n">ngx_http_hello_world</span><span class="p">,</span>
+    <span class="mi">0</span><span class="p">,</span>
+    <span class="mi">0</span><span class="p">,</span>
+    <span class="nb">NULL</span>
+  <span class="p">},</span>
+    <span class="n">ngx_null_command</span>
+<span class="p">};</span>
+
+<span class="k">static</span> <span class="n">ngx_http_module_t</span>  <span class="n">ngx_http_hello_world_module_ctx</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span>
+<span class="p">};</span>
+
+<span class="n">ngx_module_t</span> <span class="n">ngx_http_hello_world_module</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="n">NGX_MODULE_V1</span><span class="p">,</span>
+  <span class="o">&amp;</span><span class="n">ngx_http_hello_world_module_ctx</span><span class="p">,</span>
+  <span class="n">ngx_http_hello_world_commands</span><span class="p">,</span>
+  <span class="n">NGX_HTTP_MODULE</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="n">NGX_MODULE_V1_PADDING</span>
+<span class="p">};</span>
+
+<span class="k">static</span> <span class="n">ngx_int_t</span> <span class="nf">ngx_http_hello_world_handler</span><span class="p">(</span><span class="n">ngx_http_request_t</span> <span class="o">*</span><span class="n">r</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">u_char</span> <span class="o">*</span><span class="n">ngx_hello_world</span> <span class="o">=</span> <span class="p">(</span><span class="n">u_char</span> <span class="o">*</span><span class="p">)</span> <span class="s">"Hello World!"</span><span class="p">;</span>
+  <span class="kt">size_t</span> <span class="n">sz</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">ngx_hello_world</span><span class="p">);</span>
+
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_type</span><span class="p">.</span><span class="n">len</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="s">"text/html"</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_type</span><span class="p">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="n">u_char</span> <span class="o">*</span><span class="p">)</span> <span class="s">"text/html"</span><span class="p">;</span>
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">NGX_HTTP_OK</span><span class="p">;</span>
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_length_n</span> <span class="o">=</span> <span class="n">sz</span><span class="p">;</span>
+  <span class="n">ngx_http_send_header</span><span class="p">(</span><span class="n">r</span><span class="p">);</span>
+
+  <span class="n">ngx_buf_t</span>    <span class="o">*</span><span class="n">b</span><span class="p">;</span>
+  <span class="n">ngx_chain_t</span>   <span class="o">*</span><span class="n">out</span><span class="p">;</span>
+  <span class="n">b</span> <span class="o">=</span> <span class="n">ngx_pcalloc</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">ngx_buf_t</span><span class="p">));</span>
+  <span class="n">out</span><span class="o">-&gt;</span><span class="n">buf</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>
+  <span class="n">out</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+  <span class="n">b</span><span class="o">-&gt;</span><span class="n">pos</span> <span class="o">=</span> <span class="n">ngx_hello_world</span><span class="p">;</span>
+  <span class="n">b</span><span class="o">-&gt;</span><span class="n">last</span> <span class="o">=</span> <span class="n">ngx_hello_world</span> <span class="o">+</span> <span class="n">sz</span><span class="p">;</span>
+  <span class="n">b</span><span class="o">-&gt;</span><span class="n">memory</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">b</span><span class="o">-&gt;</span><span class="n">last_buf</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="k">return</span> <span class="n">ngx_http_output_filter</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">out</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">static</span> <span class="kt">char</span> <span class="o">*</span><span class="nf">ngx_http_hello_world</span><span class="p">(</span><span class="n">ngx_conf_t</span> <span class="o">*</span><span class="n">cf</span><span class="p">,</span> <span class="n">ngx_command_t</span> <span class="o">*</span><span class="n">cmd</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">conf</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">ngx_http_core_loc_conf_t</span>  <span class="o">*</span><span class="n">clcf</span><span class="p">;</span>
+  <span class="n">clcf</span> <span class="o">=</span> <span class="n">ngx_http_conf_get_module_loc_conf</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">ngx_http_core_module</span><span class="p">);</span>
+  <span class="n">clcf</span><span class="o">-&gt;</span><span class="n">handler</span> <span class="o">=</span> <span class="n">ngx_http_hello_world_handler</span><span class="p">;</span>
+  <span class="k">return</span> <span class="n">NGX_CONF_OK</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre>
+
+<p>This C file is huge! Let&rsquo;s go through it line by line:</p>
+
+<p>The first line is a prototype for the function <code class="prettyprint">ngx_http_hello_world</code>.
+We&rsquo;ll define the function at the end of the file.</p>
+
+<p><code class="prettyprint">ngx_http_hello_world_commands</code> is a static array of directives. In our
+module, we have only one directive: <code class="prettyprint">print_hello_world</code>. It will have no
+arguments, so we put in <code class="prettyprint">NGX_CONF_NOARGS</code>.</p>
+
+<p><code class="prettyprint">ngx_http_hello_world_module_ctx</code> is an array of function references.
+The functions will be executed for various purposes such as preconfiguration,
+postconfiguration, etc. We don&rsquo;t need this array in our module, but we
+still have to define it and fill it with <code class="prettyprint">NULL</code>s.</p>
+
+<p><code class="prettyprint">ngx_http_hello_world_module</code> is an array of definitions for the
+module. It tells where the array of directives and functions are
+(<code class="prettyprint">ngx_http_hello_world_module</code> and <code class="prettyprint">ngx_http_hello_world_module_ctx</code>).
+We can also add init and exit callback functions. If you&rsquo;re interested,
+you can learn more <a href="#">here</a>. In our module, we don&rsquo;t need them so
+we put <code class="prettyprint">NULL</code>s instead.</p>
+
+<p>Now for the interesting part. <code class="prettyprint">ngx_http_hello_world_handler</code> is the heart
+of our module. We want to print <code class="prettyprint">Hello World!</code> on the screen, so we have
+an <code class="prettyprint">unsigned char *</code> with our message in it. Right after that, there
+is another variable with the size of the message.</p>
+
+<p>Next, we have to send the headers. Notice that <code class="prettyprint">ngx_http_hello_world_handler</code>
+had 1 argument that was of type <code class="prettyprint">ngx_http_request_t</code>. This is a custom
+struct made by Nginx. It has a member called <code class="prettyprint">headers_out</code>, which
+we use to send the headers. After we are done setting the headers, we
+can send them with <code class="prettyprint">ngx_http_send_header(r)</code>.</p>
+
+<p>Now we have to send the body. <code class="prettyprint">ngx_buf_t</code> is a buffer, and <code class="prettyprint">ngx_chain_t</code>
+is a chain link. The chain links send responses buffer by buffer and point
+to the next link. In our module, there is no next link, so we set <code class="prettyprint">out-&gt;next</code>
+to <code class="prettyprint">NULL</code>. <code class="prettyprint">ngx_pcalloc</code> is Nginx&rsquo;s calloc wrapper that automatically takes
+care of garbage collection. <code class="prettyprint">b-&gt;pos</code> and <code class="prettyprint">b-&gt;last</code> help us send our
+content. <code class="prettyprint">b-&gt;pos</code> is the first position in the memory and <code class="prettyprint">b-&gt;last</code> is
+the last position. <code class="prettyprint">b-&gt;memory</code> is set to 1 because our content
+is read-only. <code class="prettyprint">b-&gt;last_buf</code> tells that our buffer is the last buffer
+in the request.</p>
+
+<p>Now that we&rsquo;re done setting the body, we can send it with
+<code class="prettyprint">return ngx_http_output_filter(r, &amp;out)</code></p>
+
+<p>Now we define that function we prototyped in the beginning.
+We can show Nginx what our handler is called with
+<code class="prettyprint">clcf-&gt; handler = ngx_http_hello_world_handler</code>.</p>
+
+<p>And we&rsquo;re done with our C file! Time to build the module.</p>
+
+<h2 id="building-the-module">Building the Module</h2>
+
+<blockquote>
+<p>How to build the module:</p>
+</blockquote>
+<pre class="highlight shell"><code><span class="gp">$ </span>./configure <span class="se">\</span>
+<span class="gp">&gt; </span>--prefix<span class="o">=</span>/where/i/want/to/install/nginx <span class="se">\</span>
+<span class="gp">&gt; </span>--add-dynamic-module<span class="o">=</span>/path/to/ngx_http_hello_world_module
+
+<span class="c"># Build module and Nginx</span>
+
+<span class="gp">$ </span>make
+<span class="gp">$ </span>make install
+
+<span class="c"># Build module</span>
+
+<span class="gp">$ </span>make modules
+<span class="gp">$ </span>cp objs/ngx_http_hello_world_module.so &lt;nginx_install_location&gt;/modules
+</code></pre>
+
+<p>In the Nginx source, run <code class="prettyprint">configure</code>, <code class="prettyprint">make</code>, and <code class="prettyprint">make install</code>. If you only
+want to build the modules and not the Nginx server itself, you can run
+<code class="prettyprint">make modules</code>.</p>
+
+<aside class="notice">
+If you run make modules, you have to manually move your module
+*.so file from the objs directory to your Nginx installation.
+</aside>
+
+<h2 id="using-the-module">Using the Module</h2>
+
+<blockquote>
+<p>nginx.conf</p>
+</blockquote>
+<pre class="highlight plaintext"><code>load_module "modules/ngx_http_hello_world_module.so"
+
+http {
+  default_type  application/octet-stream;
+  server {
+    listen 8000;
+    server_name localhost;
+    location / {
+      root  html;
+      index index.html index.htm;
+    }
+    location /test {
+      print_hello_world;
+    }
+  }
+}
+</code></pre>
+
+<p>To use the module, edit your <code class="prettyprint">nginx.conf</code> file found in the <code class="prettyprint">conf</code> directory
+in the install location.</p>
+
+<p>When you&rsquo;re done, you can run nginx (<code class="prettyprint">&lt;nginx_install_location&gt;/sbin/nginx</code>)
+and take a look at your work at
+<a href="http://localhost:8000/test">localhost:8000/test</a>. You should get a blank
+page saying <code class="prettyprint">Hello World!</code>. If so, congratulations! You made your first
+Nginx module! This module is the base for making any handler.</p>
+
+<h2 id="printing-all-the-url-arguments">Printing All the URL Arguments</h2>
+
+<blockquote>
+<p>Modified ngx_http_hello_world_handler:</p>
+</blockquote>
+<pre class="highlight c"><code><span class="k">static</span> <span class="n">ngx_int_t</span> <span class="nf">ngx_http_hello_world_handler</span><span class="p">(</span><span class="n">ngx_http_request_t</span> <span class="o">*</span><span class="n">r</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">u_char</span> <span class="o">*</span><span class="n">ngx_hello_world</span> <span class="o">=</span> <span class="n">r</span><span class="o">-&gt;</span><span class="n">args</span><span class="p">.</span><span class="n">data</span><span class="p">;</span>
+  <span class="kt">size_t</span> <span class="n">sz</span> <span class="o">=</span> <span class="n">r</span><span class="o">-&gt;</span><span class="n">args</span><span class="p">.</span><span class="n">len</span><span class="p">;</span>
+
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_type</span><span class="p">.</span><span class="n">len</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="s">"text/html"</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_type</span><span class="p">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="n">u_char</span> <span class="o">*</span><span class="p">)</span> <span class="s">"text/html"</span><span class="p">;</span>
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">NGX_HTTP_OK</span><span class="p">;</span>
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_length_n</span> <span class="o">=</span> <span class="n">sz</span><span class="p">;</span>
+  <span class="n">ngx_http_send_header</span><span class="p">(</span><span class="n">r</span><span class="p">);</span>
+
+  <span class="n">ngx_buf_t</span>    <span class="o">*</span><span class="n">b</span><span class="p">;</span>
+  <span class="n">ngx_chain_t</span>   <span class="n">out</span><span class="p">;</span>
+  <span class="n">b</span> <span class="o">=</span> <span class="n">ngx_pcalloc</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">ngx_buf_t</span><span class="p">));</span>
+  <span class="n">out</span><span class="p">.</span><span class="n">buf</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>
+  <span class="n">out</span><span class="p">.</span><span class="n">next</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+  <span class="n">b</span><span class="o">-&gt;</span><span class="n">pos</span> <span class="o">=</span> <span class="n">ngx_hello_world</span><span class="p">;</span>
+  <span class="n">b</span><span class="o">-&gt;</span><span class="n">last</span> <span class="o">=</span> <span class="n">ngx_hello_world</span> <span class="o">+</span> <span class="n">sz</span><span class="p">;</span>
+  <span class="n">b</span><span class="o">-&gt;</span><span class="n">memory</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">b</span><span class="o">-&gt;</span><span class="n">last_buf</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="k">return</span> <span class="n">ngx_http_output_filter</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">out</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre>
+
+<p>Now, we&rsquo;ll modify our module slightly to print all the URL arguments
+(everything after the <code class="prettyprint">?</code>). So if our request is
+<code class="prettyprint">localhost:8000/test?foo=bar&amp;hello=world</code> we should get <code class="prettyprint">foo=bar&amp;hello=world</code>
+printed in the body.</p>
+
+<p>We need to modify the handler, <code class="prettyprint">ngx_http_hello_world_handler</code>. Notice
+that the string <code class="prettyprint">Hello World!</code> was changed to <code class="prettyprint">r-&gt;args.data</code>, and
+<code class="prettyprint">sizeof(ngx_hello_world)</code> was changed to <code class="prettyprint">r-&gt;args.len</code>. <code class="prettyprint">r-&gt;args</code>stores
+all the arguments and is of type <code class="prettyprint">ngx_str_t</code>. <code class="prettyprint">ngx_str_t</code>s have a <code class="prettyprint">data</code>
+and a <code class="prettyprint">len</code> element, for storing the string and its length.</p>
+
+<p>When you&rsquo;re done, you should stop nginx
+(<code class="prettyprint">&lt;nginx_install_location&gt;/sbin/nginx&gt; -s stop</code>) and build again. After that&rsquo;s
+done, start Nginx again and go to
+<a href="localhost:8000/test?foo=hello&amp;bar=world">localhost:8000/test?foo=hello&amp;bar=world</a>.
+You should see <code class="prettyprint">foo=hello&amp;bar=world</code> printed in the body.</p>
+
+<h2 id="many-buffers">Many Buffers</h2>
+
+<blockquote>
+<p>Modified ngx_http_hello_world_handler:</p>
+</blockquote>
+<pre class="highlight c"><code><span class="k">static</span> <span class="n">ngx_int_t</span> <span class="nf">ngx_http_hello_world_handler</span><span class="p">(</span><span class="n">ngx_http_request_t</span> <span class="o">*</span><span class="n">r</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">u_char</span> <span class="o">*</span><span class="n">ngx_hello_world</span> <span class="o">=</span> <span class="p">(</span><span class="n">u_char</span> <span class="o">*</span><span class="p">)</span> <span class="s">"Hello World!"</span><span class="p">;</span>
+  <span class="kt">size_t</span> <span class="n">sz</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">ngx_hello_world</span><span class="p">);</span>
+
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_type</span><span class="p">.</span><span class="n">len</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="s">"text/html"</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_type</span><span class="p">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="n">u_char</span> <span class="o">*</span><span class="p">)</span> <span class="s">"text/html"</span><span class="p">;</span>
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">NGX_HTTP_OK</span><span class="p">;</span>
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_length_n</span> <span class="o">=</span> <span class="n">sz</span><span class="p">;</span>
+  <span class="n">ngx_http_send_header</span><span class="p">(</span><span class="n">r</span><span class="p">);</span>
+
+  <span class="n">ngx_buf_t</span>    <span class="o">*</span><span class="n">b</span><span class="p">,</span> <span class="o">*</span><span class="n">b2</span><span class="p">;</span>
+  <span class="n">ngx_chain_t</span>   <span class="o">*</span><span class="n">out</span><span class="p">,</span> <span class="o">*</span><span class="n">out2</span><span class="p">;</span>
+  <span class="n">b</span> <span class="o">=</span> <span class="n">ngx_pcalloc</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">ngx_buf_t</span><span class="p">));</span>
+  <span class="n">b2</span> <span class="o">=</span> <span class="n">ngx_pcalloc</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">ngx_buf_t</span><span class="p">));</span>
+
+  <span class="n">b</span><span class="o">-&gt;</span><span class="n">pos</span> <span class="o">=</span> <span class="n">ngx_hello_world</span><span class="p">;</span>
+  <span class="n">b</span><span class="o">-&gt;</span><span class="n">last</span> <span class="o">=</span> <span class="n">ngx_hello_world</span> <span class="o">+</span> <span class="n">sz</span><span class="p">;</span>
+  <span class="n">b</span><span class="o">-&gt;</span><span class="n">memory</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">b</span><span class="o">-&gt;</span><span class="n">last_buf</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="n">b2</span><span class="o">-&gt;</span><span class="n">pos</span> <span class="o">=</span> <span class="n">ngx_hello_world</span><span class="p">;</span>
+  <span class="n">b2</span><span class="o">-&gt;</span><span class="n">last</span> <span class="o">=</span> <span class="n">ngx_hello_world</span> <span class="o">+</span> <span class="n">sz</span><span class="p">;</span>
+  <span class="n">b2</span><span class="o">-&gt;</span><span class="n">memory</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">b2</span><span class="o">-&gt;</span><span class="n">last_buf</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+
+  <span class="n">out2</span><span class="o">-&gt;</span><span class="n">buf</span> <span class="o">=</span> <span class="n">b2</span><span class="p">;</span>
+  <span class="n">out2</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
+  <span class="n">out</span><span class="o">-&gt;</span><span class="n">buf</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>
+  <span class="n">out</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">out2</span><span class="p">;</span>
+
+
+  <span class="k">return</span> <span class="n">ngx_http_output_filter</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">out</span><span class="p">);</span>
+<span class="p">}</span>
+
+</code></pre>
+
+<p>Get your hello world template again and add another buffer
+(<code class="prettyprint">ngx_buf_t *b2</code>) and another chain link (<code class="prettyprint">ngx_chain_t out2;</code>).
+Then allocate some memory with <code class="prettyprint">ngx_pcalloc</code>. Everything is the same except
+that we are setting <code class="prettyprint">b-&gt;last_buf</code> to 0 and <code class="prettyprint">out.next</code> to <code class="prettyprint">out2</code>. This
+is because our original buffer is no longer the last one, and the next
+buffer is <code class="prettyprint">out2</code>.</p>
+
+<p>Now, if we send the headers we only mention our original buffer because
+<code class="prettyprint">out</code> links to the next buffer.</p>
+
+<p>Rebuild, restart, and go to <code class="prettyprint">localhost:8000/test</code>. You should see
+<code class="prettyprint">Hello World!Hello World!</code>.</p>
+
+<h1 id="the-filter-guide">The Filter Guide</h1>
+
+<p>After a handler is loaded and run, all the filter modules are executed.
+Filters take the header and/or body, manipulate them, and then send them back. </p>
+
+<p><img alt="Module Chain" src="images/modulechain.png" /></p>
+
+<p>Our module will add a music track to all web pages where the module is loaded.</p>
+
+<h2 id="the-config-file">The Config File</h2>
+
+<blockquote>
+<p>config</p>
+</blockquote>
+<pre class="highlight shell"><code><span class="nv">ngx_addon_name</span><span class="o">=</span>ngx_http_hello_world_module
+
+<span class="k">if </span><span class="nb">test</span> -n <span class="s2">"</span><span class="nv">$ngx_module_link</span><span class="s2">"</span>; <span class="k">then</span>
+    <span class="c"># The New Way</span>
+    <span class="nv">ngx_module_type</span><span class="o">=</span>HTTP_FILTER
+    <span class="nv">ngx_module_name</span><span class="o">=</span>ngx_http_hello_world_module
+    <span class="nv">ngx_module_srcs</span><span class="o">=</span><span class="s2">"</span><span class="nv">$ngx_addon_dir</span><span class="s2">/ngx_http_hello_world_module.c"</span>
+
+    . auto/module
+<span class="k">else</span>
+    <span class="c"># The Old Way</span>
+    <span class="nv">HTTP_FILTER_MODULES</span><span class="o">=</span><span class="s2">"</span><span class="nv">$HTTP_FILTER_MODULES</span><span class="s2"> ngx_http_hello_world_module"</span>
+    <span class="nv">NGX_ADDON_SRCS</span><span class="o">=</span><span class="s2">"</span><span class="nv">$NGX_ADDON_SRCS</span><span class="s2"> </span><span class="nv">$ngx_addon_dir</span><span class="s2">/ngx_http_hello_world_module.c"</span>
+<span class="k">fi</span>
+</code></pre>
+
+<p>Nothing is very different here, except that <code class="prettyprint">HTTP</code> is replaced with <code class="prettyprint">HTTP_FILTER</code>.</p>
+
+<h2 id="the-c-file">The C File</h2>
+
+<blockquote>
+<p>ngx_http_hello_world_module.c</p>
+</blockquote>
+<pre class="highlight c"><code><span class="cp">#include &lt;ngx_config.h&gt;
+#include &lt;ngx_core.h&gt;
+#include &lt;ngx_http.h&gt;
+</span>
+<span class="n">u_char</span> <span class="o">*</span><span class="n">hello_world</span> <span class="o">=</span> <span class="p">(</span><span class="n">u_char</span> <span class="o">*</span><span class="p">)</span> <span class="s">"&lt;audio controls loop autoplay src=</span><span class="se">\"</span><span class="s">https://upload.wikimedia.org/wikipedia/commons/8/85/Holst-_mars.ogg</span><span class="se">\"</span><span class="s">&gt;&lt;/audio&gt;"</span><span class="p">;</span>
+
+<span class="k">static</span> <span class="kt">char</span> <span class="o">*</span>
+<span class="nf">ngx_http_hello_world</span><span class="p">(</span><span class="n">ngx_conf_t</span> <span class="o">*</span><span class="n">cf</span><span class="p">,</span> <span class="n">ngx_command_t</span> <span class="o">*</span><span class="n">cmd</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">conf</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="k">return</span> <span class="n">NGX_OK</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="k">static</span> <span class="n">ngx_int_t</span> <span class="n">ngx_http_hello_world_init</span><span class="p">(</span><span class="n">ngx_conf_t</span> <span class="o">*</span><span class="n">cf</span><span class="p">);</span>
+
+
+<span class="k">static</span> <span class="n">ngx_command_t</span>  <span class="n">ngx_http_hello_world_commands</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+
+  <span class="p">{</span> <span class="n">ngx_string</span><span class="p">(</span><span class="s">"hello_world"</span><span class="p">),</span>
+  <span class="n">NGX_HTTP_MAIN_CONF</span><span class="o">|</span><span class="n">NGX_HTTP_SRV_CONF</span><span class="o">|</span><span class="n">NGX_HTTP_LOC_CONF</span><span class="o">|</span><span class="n">NGX_CONF_NOARGS</span><span class="p">,</span>
+  <span class="n">ngx_http_hello_world</span><span class="p">,</span>
+  <span class="mi">0</span><span class="p">,</span>
+  <span class="mi">0</span><span class="p">,</span>
+  <span class="nb">NULL</span> <span class="p">},</span>
+
+  <span class="n">ngx_null_command</span>
+<span class="p">};</span>
+
+
+<span class="k">static</span> <span class="n">ngx_http_module_t</span>  <span class="n">ngx_http_hello_world_module_ctx</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nb">NULL</span><span class="p">,</span>                                         <span class="cm">/* proconfiguration */</span>
+  <span class="n">ngx_http_hello_world_init</span><span class="p">,</span>               <span class="cm">/* postconfiguration */</span>
+
+  <span class="nb">NULL</span><span class="p">,</span>                                         <span class="cm">/* create main configuration */</span>
+  <span class="nb">NULL</span><span class="p">,</span>                                         <span class="cm">/* init main configuration */</span>
+
+  <span class="nb">NULL</span><span class="p">,</span>                                         <span class="cm">/* create server configuration */</span>
+  <span class="nb">NULL</span><span class="p">,</span>                                         <span class="cm">/* merge server configuration */</span>
+
+  <span class="nb">NULL</span><span class="p">,</span>                         <span class="cm">/* create location configuration */</span>
+  <span class="nb">NULL</span>                          <span class="cm">/* merge location configuration */</span>
+<span class="p">};</span>
+
+
+
+
+<span class="n">ngx_module_t</span>  <span class="n">ngx_http_hello_world_module</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="n">NGX_MODULE_V1</span><span class="p">,</span>
+  <span class="o">&amp;</span><span class="n">ngx_http_hello_world_module_ctx</span><span class="p">,</span> <span class="cm">/* module context */</span>
+  <span class="n">ngx_http_hello_world_commands</span><span class="p">,</span>    <span class="cm">/* module directives */</span>
+  <span class="n">NGX_HTTP_MODULE</span><span class="p">,</span>                       <span class="cm">/* module type */</span>
+  <span class="nb">NULL</span><span class="p">,</span>                                  <span class="cm">/* init master */</span>
+  <span class="nb">NULL</span><span class="p">,</span>                                  <span class="cm">/* init module */</span>
+  <span class="nb">NULL</span><span class="p">,</span>                                  <span class="cm">/* init process */</span>
+  <span class="nb">NULL</span><span class="p">,</span>                                  <span class="cm">/* init thread */</span>
+  <span class="nb">NULL</span><span class="p">,</span>                                  <span class="cm">/* exit thread */</span>
+  <span class="nb">NULL</span><span class="p">,</span>                                  <span class="cm">/* exit process */</span>
+  <span class="nb">NULL</span><span class="p">,</span>                                  <span class="cm">/* exit master */</span>
+  <span class="n">NGX_MODULE_V1_PADDING</span>
+<span class="p">};</span>
+
+
+
+
+<span class="k">static</span> <span class="n">ngx_http_output_header_filter_pt</span> <span class="n">ngx_http_next_header_filter</span><span class="p">;</span>
+<span class="k">static</span> <span class="n">ngx_http_output_body_filter_pt</span>   <span class="n">ngx_http_next_body_filter</span><span class="p">;</span>
+
+
+<span class="k">static</span> <span class="n">ngx_int_t</span>
+<span class="nf">ngx_http_hello_world_header_filter</span><span class="p">(</span><span class="n">ngx_http_request_t</span> <span class="o">*</span><span class="n">r</span><span class="p">)</span>
+<span class="p">{</span>
+
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_length_n</span> <span class="o">+=</span> <span class="n">strlen</span><span class="p">((</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="n">hello_world</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="n">ngx_http_next_header_filter</span><span class="p">(</span><span class="n">r</span><span class="p">);</span>
+<span class="p">}</span>
+
+
+<span class="k">static</span> <span class="n">ngx_int_t</span>
+<span class="nf">ngx_http_hello_world_body_filter</span><span class="p">(</span><span class="n">ngx_http_request_t</span> <span class="o">*</span><span class="n">r</span><span class="p">,</span> <span class="n">ngx_chain_t</span> <span class="o">*</span><span class="n">in</span><span class="p">)</span>
+<span class="p">{</span>
+
+  <span class="n">ngx_buf_t</span>             <span class="o">*</span><span class="n">buf</span><span class="p">;</span>
+  <span class="n">ngx_chain_t</span>           <span class="o">*</span><span class="n">link</span><span class="p">;</span>
+
+
+  <span class="n">buf</span> <span class="o">=</span> <span class="n">ngx_calloc_buf</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">);</span>
+
+  <span class="n">buf</span><span class="o">-&gt;</span><span class="n">pos</span> <span class="o">=</span> <span class="n">hello_world</span><span class="p">;</span>
+  <span class="n">buf</span><span class="o">-&gt;</span><span class="n">last</span> <span class="o">=</span> <span class="n">buf</span><span class="o">-&gt;</span><span class="n">pos</span> <span class="o">+</span> <span class="n">strlen</span><span class="p">((</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="n">hello_world</span><span class="p">);</span>
+  <span class="n">buf</span><span class="o">-&gt;</span><span class="n">start</span> <span class="o">=</span> <span class="n">buf</span><span class="o">-&gt;</span><span class="n">pos</span><span class="p">;</span>
+  <span class="n">buf</span><span class="o">-&gt;</span><span class="n">end</span> <span class="o">=</span> <span class="n">buf</span><span class="o">-&gt;</span><span class="n">last</span><span class="p">;</span>
+  <span class="n">buf</span><span class="o">-&gt;</span><span class="n">last_buf</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">buf</span><span class="o">-&gt;</span><span class="n">memory</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+
+  <span class="n">link</span> <span class="o">=</span> <span class="n">ngx_alloc_chain_link</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">);</span>
+
+  <span class="n">link</span><span class="o">-&gt;</span><span class="n">buf</span> <span class="o">=</span> <span class="n">buf</span><span class="p">;</span>
+  <span class="n">link</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">in</span><span class="p">;</span>
+
+  <span class="k">return</span> <span class="n">ngx_http_next_body_filter</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">link</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">static</span> <span class="n">ngx_int_t</span>
+<span class="nf">ngx_http_hello_world_init</span><span class="p">(</span><span class="n">ngx_conf_t</span> <span class="o">*</span><span class="n">cf</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">ngx_http_next_body_filter</span> <span class="o">=</span> <span class="n">ngx_http_top_body_filter</span><span class="p">;</span>
+  <span class="n">ngx_http_top_body_filter</span> <span class="o">=</span> <span class="n">ngx_http_hello_world_body_filter</span><span class="p">;</span>
+
+  <span class="n">ngx_http_next_header_filter</span> <span class="o">=</span> <span class="n">ngx_http_top_header_filter</span><span class="p">;</span>
+  <span class="n">ngx_http_top_header_filter</span> <span class="o">=</span> <span class="n">ngx_http_hello_world_header_filter</span><span class="p">;</span>
+
+  <span class="k">return</span> <span class="n">NGX_OK</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre>
+
+<p>Let&rsquo;s see how this is different from our handler. First we see our
+<code class="prettyprint">u_char</code>: An HTML <code class="prettyprint">&lt;audio&gt;</code> element with a song (from Wikipedia).</p>
+
+<p>Next, instead of prototyping <code class="prettyprint">ngx_http_background_music</code>, we
+just defined it. Normally, this function would be more interesting,
+but since this is just a demo module, we don&rsquo;t need to do anything
+other than returning <code class="prettyprint">NGX_OK</code>.</p>
+
+<p>The filter is made of two parts: the header filter, and the body filter.
+For our header filter, we only have to add the content length
+of our <code class="prettyprint">background_music</code> variable. After that, we pass on the baton
+to the next header filter with <code class="prettyprint">ngx_http_next_header_filter</code>.</p>
+
+<p>The body filter accepts 2 arguments: An <code class="prettyprint">ngx_http_request_t</code>, and a
+chain link, <code class="prettyprint">ngx_chain_t</code>. The chain link is from the handler and
+previous filters (if any). What we want to do is to prefix our
+audio element to the chain link <code class="prettyprint">in</code>. It won&rsquo;t be perfectly valid
+HTML, but it&rsquo;s good enough for now.</p>
+
+<p>Our buffer should have <code class="prettyprint">last_buf</code> set to <code class="prettyprint">0</code> because it isn&rsquo;t the last
+buffer: The last buffer is in the <code class="prettyprint">in</code> chain link. So we&rsquo;ll just set
+<code class="prettyprint">link-&gt;next</code> to <code class="prettyprint">in</code> and call the next body filter.</p>
+
+<p>The <code class="prettyprint">ngx_http_background_music_init</code> just tells what our filter
+funtions are called.</p>
+
+<p>And we&rsquo;re done. Now build and reload nginx, and you should see&hellip;
+a 404 page? Yes, there will be a 404 page, but with an audio track
+above it.</p>
+
+<h2 id="using-the-module">Using the Module</h2>
+
+<blockquote>
+<p>nginx.conf</p>
+</blockquote>
+<pre class="highlight plaintext"><code>load_module "modules/ngx_http_hello_world_module.so"
+
+http {
+  default_type  application/octet-stream;
+  server {
+    listen 8000;
+    server_name localhost;
+    location / {
+      root  html;
+      index index.html index.htm;
+    }
+    location /test {
+      root html;
+      index index.html index.htm;
+      print_hello_world;
+    }
+  }
+}
+</code></pre>
+
+<p>There was a 404 page because there was no other handler given.
+If you just add an HTML file, that should be taken care of.</p>
+
+<h1 id="data-types">Data Types</h1>
+
+<h2 id="ngx_http_request_t">ngx_http_request_t</h2>
+
+<blockquote>
+<p>Example usage of the server variable:</p>
+</blockquote>
+<pre class="highlight c"><code><span class="n">function</span> <span class="n">hello_world_handler</span><span class="p">(</span><span class="n">ngx_http_request_t</span> <span class="o">*</span><span class="n">r</span><span class="p">){</span>
+  <span class="p">...</span>
+  <span class="n">ngx_str_t</span> <span class="o">*</span><span class="n">test</span> <span class="o">=</span> <span class="n">r</span><span class="o">-&gt;</span><span class="n">server</span><span class="p">;</span>
+  <span class="n">u_char</span> <span class="o">*</span><span class="n">testString</span> <span class="o">=</span> <span class="n">test</span><span class="p">.</span><span class="n">data</span><span class="p">;</span>
+  <span class="p">...</span>
+<span class="p">}</span>
+</code></pre>
+
+<p>This table lists some useful members of <code class="prettyprint">ngx_http_request_t</code></p>
+
+<table><thead>
+<tr>
+<th>Member</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>args</td>
+<td>ngx_str_t</td>
+<td>All the arguments in one string</td>
+</tr>
+<tr>
+<td>server</td>
+<td>ngx_str_t</td>
+<td>The server name</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>ngx_str_t</td>
+<td>The request path</td>
+</tr>
+<tr>
+<td>pool</td>
+<td>ngx_pool_t*</td>
+<td>Used for allocating memory</td>
+</tr>
+</tbody></table>
+
+<h2 id="ngx_str_t">ngx_str_t</h2>
+
+<blockquote>
+<p>ngx_str_t usage:</p>
+</blockquote>
+<pre class="highlight c"><code><span class="c1">// Initialize string
+</span><span class="n">ngx_str_t</span> <span class="n">mystring</span> <span class="o">=</span> <span class="n">ngx_string</span><span class="p">(</span><span class="s">"hello"</span><span class="p">);</span>
+
+<span class="c1">// Use string
+</span><span class="p">...</span>
+<span class="n">r</span><span class="o">-&gt;</span><span class="n">pos</span> <span class="o">=</span> <span class="n">mystring</span><span class="p">.</span><span class="n">data</span><span class="p">;</span>
+<span class="n">r</span><span class="o">-&gt;</span><span class="n">last</span> <span class="o">=</span> <span class="n">mystring</span><span class="p">.</span><span class="n">data</span> <span class="o">+</span> <span class="n">mystring</span><span class="p">.</span><span class="n">len</span><span class="p">;</span>
+<span class="p">...</span>
+</code></pre>
+
+<p>The <code class="prettyprint">ngx_str_t</code> datatype has 2 members: <code class="prettyprint">data</code> and <code class="prettyprint">len</code>. They allow
+you to access the contents of the string and it&rsquo;s length.</p>
+
+<table><thead>
+<tr>
+<th>Member</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>data</td>
+<td>u_char*</td>
+<td>The contents of the string</td>
+</tr>
+<tr>
+<td>len</td>
+<td>size_t</td>
+<td>The length of the string</td>
+</tr>
+</tbody></table>
+
+<h1 id="other-stuff">Other Stuff</h1>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+<h3 id="1-only-part-of-my-text-is-showing-up">1. Only part of my text is showing up!</h3>
+
+<p>You have to correctly set the size in both the headers and
+in the buffer. If your string is a <code class="prettyprint">u_char*</code>, use <code class="prettyprint">ngx_strlen</code>, if it&rsquo;s
+an <code class="prettyprint">ngx_str_t</code>, use <code class="prettyprint">{variable_name}.len</code>.</p>
+
+<h3 id="2-some-weird-string-is-showing-up-after-my-text">2. Some weird string is showing up after my text.</h3>
+
+<p>See #1.</p>
+
+<h3 id="3-why-is-my-filter-not-working-but-compiling">3. Why is my filter not working (but compiling)?</h3>
+
+<p>Make sure you&rsquo;ve configured it correctly. The <code class="prettyprint">config</code> file
+should have <code class="prettyprint">HTTP_FILTER</code> instead of <code class="prettyprint">HTTP</code>. Also, check if
+you&rsquo;ve sent the body correctly, and make sure your buffer is in
+the chain link.</p>
+
+<h2 id="useful-links">Useful Links</h2>
+
+<ul>
+<li><a href="http://www.evanmiller.org/nginx-modules-guide.html">Emiller&rsquo;s Guide</a></li>
+<li><a href="https://www.nginx.com/resources/wiki/extending/api/main/">Nginx Main Module API</a></li>
+<li><a href="https://www.nginx.com/resources/wiki/extending/api/alloc/">Nginx Memory Management API</a></li>
+</ul>
+
+      </div>
+      <div class="dark-box">
+          <div class="lang-selector">
+          </div>
+      </div>
+    </div>
+  </body>
+</html>
