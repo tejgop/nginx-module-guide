@@ -14,7 +14,11 @@ about structs, pointers, and functions. You also need to know how the
 nginx.conf file works.
 
 
-If you find a mistake in the guide, please report it in an [issue]()!
+If you find a mistake in the guide, please report it in an [issue](https://github.com/tejgop/nginx-module-guide/issues)!
+
+<aside class="warning">
+This guide is currently being written. Use it at your own risk!
+</aside>
 
 
 # The Handler Guide
@@ -119,13 +123,19 @@ static ngx_int_t ngx_http_hello_world_handler(ngx_http_request_t *r)
 
   ngx_buf_t    *b;
   ngx_chain_t   *out;
-  b = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
+
+  b = ngx_calloc_buf(r->pool);
+
+  out = ngx_alloc_chain_link(r->pool);
+
   out->buf = b;
   out->next = NULL;
+
   b->pos = ngx_hello_world;
   b->last = ngx_hello_world + sz;
   b->memory = 1;
   b->last_buf = 1;
+
   return ngx_http_output_filter(r, out);
 }
 
@@ -160,8 +170,7 @@ still have to define it and fill it with `NULL`s.
 `ngx_http_hello_world_module` is an array of definitions for the
 module. It tells where the array of directives and functions are
 (`ngx_http_hello_world_module` and `ngx_http_hello_world_module_ctx`).
-We can also add init and exit callback functions. If you're interested,
-you can learn more [here](). In our module, we don't need them so
+We can also add init and exit callback functions. In our module, we don't need them so
 we put `NULL`s instead.
 
 
@@ -282,14 +291,20 @@ static ngx_int_t ngx_http_hello_world_handler(ngx_http_request_t *r)
   ngx_http_send_header(r);
 
   ngx_buf_t    *b;
-  ngx_chain_t   out;
-  b = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
+  ngx_chain_t   *out;
+
+  b = ngx_calloc_buf(r->pool);
+
+  out = ngx_alloc_chain_link(r->pool);
+
   out.buf = b;
   out.next = NULL;
+
   b->pos = ngx_hello_world;
   b->last = ngx_hello_world + sz;
   b->memory = 1;
   b->last_buf = 1;
+
   return ngx_http_output_filter(r, &out);
 }
 ```
@@ -331,8 +346,12 @@ static ngx_int_t ngx_http_hello_world_handler(ngx_http_request_t *r)
 
   ngx_buf_t    *b, *b2;
   ngx_chain_t   *out, *out2;
-  b = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
-  b2 = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
+
+  b = ngx_calloc_buf(r->pool);
+  b2 = ngx_calloc_buf(r->pool);
+
+  out = ngx_alloc_chain_link(r->pool);
+  out2 = ngx_alloc_chain_link(r->pool);
 
   b->pos = ngx_hello_world;
   b->last = ngx_hello_world + sz;
@@ -343,6 +362,8 @@ static ngx_int_t ngx_http_hello_world_handler(ngx_http_request_t *r)
   b2->last = ngx_hello_world + sz;
   b2->memory = 1;
   b2->last_buf = 1;
+
+  out = 
 
   out2->buf = b2;
   out2->next = NULL;
@@ -375,9 +396,6 @@ Rebuild, restart, and go to `localhost:8000/test`. You should see
 
 After a handler is loaded and run, all the filter modules are executed.
 Filters take the header and/or body, manipulate them, and then send them back. 
-
-![Module Chain]
-(images/modulechain.png)
 
 Our module will add a music track to all web pages where the module is loaded.
 
