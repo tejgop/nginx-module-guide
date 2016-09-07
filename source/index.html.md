@@ -190,7 +190,8 @@ can send them with `ngx_http_send_header(r)`.
 Now we have to send the body. `ngx_buf_t` is a buffer, and `ngx_chain_t`
 is a chain link. The chain links send responses buffer by buffer and point
 to the next link. In our module, there is no next link, so we set `out->next`
-to `NULL`. `ngx_pcalloc` is Nginx's calloc wrapper that automatically takes
+to `NULL`. `ngx_calloc_buf` and `ngx_alloc_chain_link` are Nginx's
+calloc wrappers that automatically take
 care of garbage collection. `b->pos` and `b->last` help us send our
 content. `b->pos` is the first position in the memory and `b->last` is
 the last position. `b->memory` is set to 1 because our content
@@ -380,7 +381,8 @@ static ngx_int_t ngx_http_hello_world_handler(ngx_http_request_t *r)
 
 Get your hello world template again and add another buffer
 (`ngx_buf_t *b2`) and another chain link (`ngx_chain_t out2;`).
-Then allocate some memory with `ngx_pcalloc`. Everything is the same except
+Then allocate some memory with `ngx_calloc_buf` and `ngx_alloc_chain_link`.
+Everything is the same except
 that we are setting `b->last_buf` to 0 and `out.next` to `out2`. This
 is because our original buffer is no longer the last one, and the next
 buffer is `out2`.
