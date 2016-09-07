@@ -287,7 +287,8 @@ can send them with <code class="prettyprint">ngx_http_send_header(r)</code>.</p>
 <p>Now we have to send the body. <code class="prettyprint">ngx_buf_t</code> is a buffer, and <code class="prettyprint">ngx_chain_t</code>
 is a chain link. The chain links send responses buffer by buffer and point
 to the next link. In our module, there is no next link, so we set <code class="prettyprint">out-&gt;next</code>
-to <code class="prettyprint">NULL</code>. <code class="prettyprint">ngx_pcalloc</code> is Nginx&rsquo;s calloc wrapper that automatically takes
+to <code class="prettyprint">NULL</code>. <code class="prettyprint">ngx_calloc_buf</code> and <code class="prettyprint">ngx_alloc_chain_link</code> are Nginx&rsquo;s
+calloc wrappers that automatically take
 care of garbage collection. <code class="prettyprint">b-&gt;pos</code> and <code class="prettyprint">b-&gt;last</code> help us send our
 content. <code class="prettyprint">b-&gt;pos</code> is the first position in the memory and <code class="prettyprint">b-&gt;last</code> is
 the last position. <code class="prettyprint">b-&gt;memory</code> is set to 1 because our content
@@ -467,7 +468,8 @@ You should see <code class="prettyprint">foo=hello&amp;bar=world</code> printed 
 
 <p>Get your hello world template again and add another buffer
 (<code class="prettyprint">ngx_buf_t *b2</code>) and another chain link (<code class="prettyprint">ngx_chain_t out2;</code>).
-Then allocate some memory with <code class="prettyprint">ngx_pcalloc</code>. Everything is the same except
+Then allocate some memory with <code class="prettyprint">ngx_calloc_buf</code> and <code class="prettyprint">ngx_alloc_chain_link</code>.
+Everything is the same except
 that we are setting <code class="prettyprint">b-&gt;last_buf</code> to 0 and <code class="prettyprint">out.next</code> to <code class="prettyprint">out2</code>. This
 is because our original buffer is no longer the last one, and the next
 buffer is <code class="prettyprint">out2</code>.</p>
