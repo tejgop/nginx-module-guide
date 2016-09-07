@@ -227,13 +227,19 @@ the new way. Otherwise, it is added the old way.</p>
 
   <span class="n">ngx_buf_t</span>    <span class="o">*</span><span class="n">b</span><span class="p">;</span>
   <span class="n">ngx_chain_t</span>   <span class="o">*</span><span class="n">out</span><span class="p">;</span>
-  <span class="n">b</span> <span class="o">=</span> <span class="n">ngx_pcalloc</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">ngx_buf_t</span><span class="p">));</span>
+
+  <span class="n">b</span> <span class="o">=</span> <span class="n">ngx_calloc_buf</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">);</span>
+
+  <span class="n">out</span> <span class="o">=</span> <span class="n">ngx_alloc_chain_link</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">);</span>
+
   <span class="n">out</span><span class="o">-&gt;</span><span class="n">buf</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>
   <span class="n">out</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">pos</span> <span class="o">=</span> <span class="n">ngx_hello_world</span><span class="p">;</span>
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">last</span> <span class="o">=</span> <span class="n">ngx_hello_world</span> <span class="o">+</span> <span class="n">sz</span><span class="p">;</span>
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">memory</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">last_buf</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+
   <span class="k">return</span> <span class="n">ngx_http_output_filter</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">out</span><span class="p">);</span>
 <span class="p">}</span>
 
@@ -375,14 +381,20 @@ Nginx module! This module is the base for making any handler.</p>
   <span class="n">ngx_http_send_header</span><span class="p">(</span><span class="n">r</span><span class="p">);</span>
 
   <span class="n">ngx_buf_t</span>    <span class="o">*</span><span class="n">b</span><span class="p">;</span>
-  <span class="n">ngx_chain_t</span>   <span class="n">out</span><span class="p">;</span>
-  <span class="n">b</span> <span class="o">=</span> <span class="n">ngx_pcalloc</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">ngx_buf_t</span><span class="p">));</span>
+  <span class="n">ngx_chain_t</span>   <span class="o">*</span><span class="n">out</span><span class="p">;</span>
+
+  <span class="n">b</span> <span class="o">=</span> <span class="n">ngx_calloc_buf</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">);</span>
+
+  <span class="n">out</span> <span class="o">=</span> <span class="n">ngx_alloc_chain_link</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">);</span>
+
   <span class="n">out</span><span class="p">.</span><span class="n">buf</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>
   <span class="n">out</span><span class="p">.</span><span class="n">next</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">pos</span> <span class="o">=</span> <span class="n">ngx_hello_world</span><span class="p">;</span>
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">last</span> <span class="o">=</span> <span class="n">ngx_hello_world</span> <span class="o">+</span> <span class="n">sz</span><span class="p">;</span>
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">memory</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">last_buf</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+
   <span class="k">return</span> <span class="n">ngx_http_output_filter</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">out</span><span class="p">);</span>
 <span class="p">}</span>
 </code></pre>
@@ -422,8 +434,12 @@ You should see <code class="prettyprint">foo=hello&amp;bar=world</code> printed 
 
   <span class="n">ngx_buf_t</span>    <span class="o">*</span><span class="n">b</span><span class="p">,</span> <span class="o">*</span><span class="n">b2</span><span class="p">;</span>
   <span class="n">ngx_chain_t</span>   <span class="o">*</span><span class="n">out</span><span class="p">,</span> <span class="o">*</span><span class="n">out2</span><span class="p">;</span>
-  <span class="n">b</span> <span class="o">=</span> <span class="n">ngx_pcalloc</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">ngx_buf_t</span><span class="p">));</span>
-  <span class="n">b2</span> <span class="o">=</span> <span class="n">ngx_pcalloc</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">ngx_buf_t</span><span class="p">));</span>
+
+  <span class="n">b</span> <span class="o">=</span> <span class="n">ngx_calloc_buf</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">);</span>
+  <span class="n">b2</span> <span class="o">=</span> <span class="n">ngx_calloc_buf</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">);</span>
+
+  <span class="n">out</span> <span class="o">=</span> <span class="n">ngx_alloc_chain_link</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">);</span>
+  <span class="n">out2</span> <span class="o">=</span> <span class="n">ngx_alloc_chain_link</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">);</span>
 
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">pos</span> <span class="o">=</span> <span class="n">ngx_hello_world</span><span class="p">;</span>
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">last</span> <span class="o">=</span> <span class="n">ngx_hello_world</span> <span class="o">+</span> <span class="n">sz</span><span class="p">;</span>
@@ -434,6 +450,8 @@ You should see <code class="prettyprint">foo=hello&amp;bar=world</code> printed 
   <span class="n">b2</span><span class="o">-&gt;</span><span class="n">last</span> <span class="o">=</span> <span class="n">ngx_hello_world</span> <span class="o">+</span> <span class="n">sz</span><span class="p">;</span>
   <span class="n">b2</span><span class="o">-&gt;</span><span class="n">memory</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
   <span class="n">b2</span><span class="o">-&gt;</span><span class="n">last_buf</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+
+  <span class="n">out</span> <span class="o">=</span> 
 
   <span class="n">out2</span><span class="o">-&gt;</span><span class="n">buf</span> <span class="o">=</span> <span class="n">b2</span><span class="p">;</span>
   <span class="n">out2</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
