@@ -361,12 +361,12 @@ static ngx_int_t ngx_http_hello_world_handler(ngx_http_request_t *r)
   out2->next = NULL;
 
   b->pos = ngx_hello_world;
-  b->last = ngx_hello_world + sz; 
+  b->last = ngx_hello_world + sz;
   b->memory = 1;
   b->last_buf = 0;
 
   b2->pos = ngx_hello_world;
-  b2->last = ngx_hello_world + sz; 
+  b2->last = ngx_hello_world + sz;
   b2->memory = 1;
   b2->last_buf = 1;
 
