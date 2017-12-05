@@ -430,7 +430,7 @@ You should see <code class="prettyprint">foo=hello&amp;bar=world</code> printed 
   <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_type</span><span class="p">.</span><span class="n">len</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="s">"text/html"</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
   <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_type</span><span class="p">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="n">u_char</span> <span class="o">*</span><span class="p">)</span> <span class="s">"text/html"</span><span class="p">;</span>
   <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">NGX_HTTP_OK</span><span class="p">;</span>
-  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_length_n</span> <span class="o">=</span> <span class="n">sz</span><span class="p">;</span>
+  <span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_out</span><span class="p">.</span><span class="n">content_length_n</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">sz</span><span class="p">;</span> 
   <span class="n">ngx_http_send_header</span><span class="p">(</span><span class="n">r</span><span class="p">);</span>
 
   <span class="n">ngx_buf_t</span>    <span class="o">*</span><span class="n">b</span><span class="p">,</span> <span class="o">*</span><span class="n">b2</span><span class="p">;</span>
@@ -442,6 +442,12 @@ You should see <code class="prettyprint">foo=hello&amp;bar=world</code> printed 
   <span class="n">out</span> <span class="o">=</span> <span class="n">ngx_alloc_chain_link</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">);</span>
   <span class="n">out2</span> <span class="o">=</span> <span class="n">ngx_alloc_chain_link</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">pool</span><span class="p">);</span>
 
+  <span class="n">out</span><span class="o">-&gt;</span><span class="n">buf</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>
+  <span class="n">out</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">out2</span><span class="p">;</span>
+
+  <span class="n">out2</span><span class="o">-&gt;</span><span class="n">buf</span> <span class="o">=</span> <span class="n">b2</span><span class="p">;</span> 
+  <span class="n">out2</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">pos</span> <span class="o">=</span> <span class="n">ngx_hello_world</span><span class="p">;</span>
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">last</span> <span class="o">=</span> <span class="n">ngx_hello_world</span> <span class="o">+</span> <span class="n">sz</span><span class="p">;</span>
   <span class="n">b</span><span class="o">-&gt;</span><span class="n">memory</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
@@ -451,15 +457,6 @@ You should see <code class="prettyprint">foo=hello&amp;bar=world</code> printed 
   <span class="n">b2</span><span class="o">-&gt;</span><span class="n">last</span> <span class="o">=</span> <span class="n">ngx_hello_world</span> <span class="o">+</span> <span class="n">sz</span><span class="p">;</span>
   <span class="n">b2</span><span class="o">-&gt;</span><span class="n">memory</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
   <span class="n">b2</span><span class="o">-&gt;</span><span class="n">last_buf</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-
-  <span class="n">out</span> <span class="o">=</span> 
-
-  <span class="n">out2</span><span class="o">-&gt;</span><span class="n">buf</span> <span class="o">=</span> <span class="n">b2</span><span class="p">;</span>
-  <span class="n">out2</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
-
-  <span class="n">out</span><span class="o">-&gt;</span><span class="n">buf</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>
-  <span class="n">out</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">out2</span><span class="p">;</span>
-
 
   <span class="k">return</span> <span class="n">ngx_http_output_filter</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">out</span><span class="p">);</span>
 <span class="p">}</span>
@@ -798,6 +795,7 @@ the chain link.</p>
 <li><a href="http://www.evanmiller.org/nginx-modules-guide.html">Emiller&rsquo;s Guide</a></li>
 <li><a href="https://www.nginx.com/resources/wiki/extending/api/main/">Nginx Main Module API</a></li>
 <li><a href="https://www.nginx.com/resources/wiki/extending/api/alloc/">Nginx Memory Management API</a></li>
+<li><a href="https://github.com/tejgop/ngx_http_eightc_module">Example Module: The EightC Module</a></li>
 </ul>
 
       </div>
