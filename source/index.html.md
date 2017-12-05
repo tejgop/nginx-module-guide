@@ -680,3 +680,4 @@ the chain link.
 - [Emiller's Guide](http://www.evanmiller.org/nginx-modules-guide.html)
 - [Nginx Main Module API](https://www.nginx.com/resources/wiki/extending/api/main/)
 - [Nginx Memory Management API](https://www.nginx.com/resources/wiki/extending/api/alloc/)
+- [Example Module: The EightC Module](https://github.com/tejgop/ngx_http_eightc_module)
