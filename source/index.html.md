@@ -342,7 +342,7 @@ static ngx_int_t ngx_http_hello_world_handler(ngx_http_request_t *r)
   r->headers_out.content_type.len = sizeof("text/html") - 1;
   r->headers_out.content_type.data = (u_char *) "text/html";
   r->headers_out.status = NGX_HTTP_OK;
-  r->headers_out.content_length_n = sz;
+  r->headers_out.content_length_n = 2 * sz; 
   ngx_http_send_header(r);
 
   ngx_buf_t    *b, *b2;
@@ -354,6 +354,12 @@ static ngx_int_t ngx_http_hello_world_handler(ngx_http_request_t *r)
   out = ngx_alloc_chain_link(r->pool);
   out2 = ngx_alloc_chain_link(r->pool);
 
+  out->buf = b;
+  out->next = out2;
+
+  out2->buf = b2; 
+  out2->next = NULL;
+
   b->pos = ngx_hello_world;
   b->last = ngx_hello_world + sz;
   b->memory = 1;
@@ -363,15 +369,6 @@ static ngx_int_t ngx_http_hello_world_handler(ngx_http_request_t *r)
   b2->last = ngx_hello_world + sz;
   b2->memory = 1;
   b2->last_buf = 1;
-
-  out = 
-
-  out2->buf = b2;
-  out2->next = NULL;
-
-  out->buf = b;
-  out->next = out2;
-
 
   return ngx_http_output_filter(r, out);
 }
