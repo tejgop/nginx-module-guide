@@ -113,9 +113,9 @@ ngx_module_t ngx_http_hello_world_module = {
 static ngx_int_t ngx_http_hello_world_handler(ngx_http_request_t *r)
 {
   u_char *ngx_hello_world = (u_char *) "Hello World!";
-  size_t sz = sizeof(ngx_hello_world);
+  size_t sz = strlen(ngx_hello_world);
 
-  r->headers_out.content_type.len = sizeof("text/html") - 1;
+  r->headers_out.content_type.len = strlen("text/html") - 1;
   r->headers_out.content_type.data = (u_char *) "text/html";
   r->headers_out.status = NGX_HTTP_OK;
   r->headers_out.content_length_n = sz;
@@ -285,7 +285,7 @@ static ngx_int_t ngx_http_hello_world_handler(ngx_http_request_t *r)
   u_char *ngx_hello_world = r->args.data;
   size_t sz = r->args.len;
 
-  r->headers_out.content_type.len = sizeof("text/html") - 1;
+  r->headers_out.content_type.len = strlen("text/html") - 1;
   r->headers_out.content_type.data = (u_char *) "text/html";
   r->headers_out.status = NGX_HTTP_OK;
   r->headers_out.content_length_n = sz;
@@ -318,7 +318,7 @@ printed in the body.
 
 We need to modify the handler, `ngx_http_hello_world_handler`. Notice
 that the string `Hello World!` was changed to `r->args.data`, and
-`sizeof(ngx_hello_world)` was changed to `r->args.len`. `r->args`stores
+`strlen(ngx_hello_world)` was changed to `r->args.len`. `r->args`stores
 all the arguments and is of type `ngx_str_t`. `ngx_str_t`s have a `data`
 and a `len` element, for storing the string and its length.
 
@@ -337,9 +337,9 @@ You should see `foo=hello&bar=world` printed in the body.
 static ngx_int_t ngx_http_hello_world_handler(ngx_http_request_t *r)
 {
   u_char *ngx_hello_world = (u_char *) "Hello World!";
-  size_t sz = sizeof(ngx_hello_world);
+  size_t sz = strlen(ngx_hello_world);
 
-  r->headers_out.content_type.len = sizeof("text/html") - 1;
+  r->headers_out.content_type.len = strlen("text/html") - 1;
   r->headers_out.content_type.data = (u_char *) "text/html";
   r->headers_out.status = NGX_HTTP_OK;
   r->headers_out.content_length_n = 2 * sz; 
